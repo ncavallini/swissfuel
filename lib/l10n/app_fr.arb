@@ -20,6 +20,8 @@
   "fuelPetrol98": "Essence 98",
   "fuelDiesel": "Diesel",
   "fuelLpg": "GPL",
+  "fuelCng": "GNC",
+  "fuelAdblue": "AdBlue",
   "distanceKm": "{value} km",
   "distanceM": "{value} m",
   "directions": "Itinéraire",

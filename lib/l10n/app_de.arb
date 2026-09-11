@@ -20,6 +20,8 @@
   "fuelPetrol98": "Benzin 98",
   "fuelDiesel": "Diesel",
   "fuelLpg": "Autogas",
+  "fuelCng": "Erdgas (CNG)",
+  "fuelAdblue": "AdBlue",
   "distanceKm": "{value} km",
   "distanceM": "{value} m",
   "directions": "Route",

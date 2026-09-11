@@ -62,7 +62,11 @@ class StationsRepository {
 
     final response = await _client.post(
       _endpoint,
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        // Overpass rejects requests without an identifying User-Agent (HTTP 406).
+        'User-Agent': 'SwissFuel/1.0 (community fuel price app)',
+      },
       body: {'data': query},
     );
 

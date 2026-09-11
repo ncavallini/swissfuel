@@ -20,6 +20,8 @@
   "fuelPetrol98": "Benzina 98",
   "fuelDiesel": "Diesel",
   "fuelLpg": "GPL",
+  "fuelCng": "Metano (CNG)",
+  "fuelAdblue": "AdBlue",
   "distanceKm": "{value} km",
   "distanceM": "{value} m",
   "directions": "Indicazioni",

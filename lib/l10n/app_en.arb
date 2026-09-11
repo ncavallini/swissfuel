@@ -20,6 +20,8 @@
   "fuelPetrol98": "Petrol 98",
   "fuelDiesel": "Diesel",
   "fuelLpg": "LPG",
+  "fuelCng": "CNG",
+  "fuelAdblue": "AdBlue",
   "distanceKm": "{value} km",
   "@distanceKm": { "placeholders": { "value": { "type": "String" } } },
   "distanceM": "{value} m",

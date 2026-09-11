@@ -69,6 +69,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get fuelLpg => 'GPL';
 
   @override
+  String get fuelCng => 'GNC';
+
+  @override
+  String get fuelAdblue => 'AdBlue';
+
+  @override
   String distanceKm(String value) {
     return '$value km';
   }

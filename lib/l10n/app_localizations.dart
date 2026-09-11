@@ -222,6 +222,18 @@ abstract class AppLocalizations {
   /// **'LPG'**
   String get fuelLpg;
 
+  /// No description provided for @fuelCng.
+  ///
+  /// In en, this message translates to:
+  /// **'CNG'**
+  String get fuelCng;
+
+  /// No description provided for @fuelAdblue.
+  ///
+  /// In en, this message translates to:
+  /// **'AdBlue'**
+  String get fuelAdblue;
+
   /// No description provided for @distanceKm.
   ///
   /// In en, this message translates to:

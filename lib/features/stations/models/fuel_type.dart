@@ -6,7 +6,9 @@ enum FuelType {
   petrol95('fuel:octane_95'),
   petrol98('fuel:octane_98'),
   diesel('fuel:diesel'),
-  lpg('fuel:lpg');
+  lpg('fuel:lpg'),
+  cng('fuel:cng'),
+  adblue('fuel:adblue');
 
   const FuelType(this.osmTag);
 
@@ -23,6 +25,10 @@ enum FuelType {
         return l10n.fuelDiesel;
       case FuelType.lpg:
         return l10n.fuelLpg;
+      case FuelType.cng:
+        return l10n.fuelCng;
+      case FuelType.adblue:
+        return l10n.fuelAdblue;
     }
   }
 }
