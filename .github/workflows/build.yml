@@ -49,11 +49,15 @@ jobs:
 
       - name: Build APK
         if: ${{ inputs.artifact == 'apk' || inputs.artifact == 'both' }}
-        run: flutter build apk --${{ inputs.mode }}
+        run: flutter build apk --${{ inputs.mode }} --dart-define=TOMTOM_API_KEY=$TOMTOM_API_KEY
+        env:
+          TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
 
       - name: Build AAB
         if: ${{ inputs.artifact == 'aab' || inputs.artifact == 'both' }}
-        run: flutter build appbundle --${{ inputs.mode }}
+        run: flutter build appbundle --${{ inputs.mode }} --dart-define=TOMTOM_API_KEY=$TOMTOM_API_KEY
+        env:
+          TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
 
       - name: Upload APK
         if: ${{ inputs.artifact == 'apk' || inputs.artifact == 'both' }}
