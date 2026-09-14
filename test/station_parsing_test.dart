@@ -74,6 +74,81 @@ void main() {
     });
   });
 
+  group('Station.fromTomTom', () {
+    test('parses a result with poi, brand and address', () {
+      final station = Station.fromTomTom({
+        'id': 'CH/POI/p0/12345',
+        'poi': {
+          'name': 'Coop Pronto Bern',
+          'brands': [
+            {'name': 'Coop'}
+          ],
+        },
+        'address': {'freeformAddress': 'Bahnhofplatz 1, 3011 Bern'},
+        'position': {'lat': 46.948, 'lon': 7.447},
+      });
+
+      expect(station, isNotNull);
+      expect(station!.id, 'tomtom/CH/POI/p0/12345');
+      expect(station.name, 'Coop Pronto Bern');
+      expect(station.brand, 'Coop');
+      expect(station.address, 'Bahnhofplatz 1, 3011 Bern');
+      // TomTom Search carries no per-fuel availability.
+      expect(station.fuels, isEmpty);
+    });
+
+    test('composes an address from parts when no freeform is given', () {
+      final station = Station.fromTomTom({
+        'id': 'x',
+        'position': {'lat': 47.0, 'lon': 8.0},
+        'address': {
+          'streetName': 'Seestrasse',
+          'streetNumber': '5',
+          'postalCode': '8002',
+          'municipality': 'Zürich',
+        },
+      });
+      expect(station!.address, 'Seestrasse 5, 8002 Zürich');
+    });
+
+    test('returns null when position is missing', () {
+      final station = Station.fromTomTom({'id': 'x', 'poi': {}});
+      expect(station, isNull);
+    });
+  });
+
+  group('Station.enrichedWith', () {
+    test('adds OSM fuel tags and fills missing fields', () {
+      final tomtom = Station.fromTomTom({
+        'id': 'x',
+        'poi': {
+          'brands': [
+            {'name': 'Migrol'}
+          ]
+        },
+        'position': {'lat': 47.0, 'lon': 8.0},
+      })!;
+      final osm = Station.fromOverpass({
+        'type': 'node',
+        'id': 1,
+        'lat': 47.0,
+        'lon': 8.0,
+        'tags': {
+          'name': 'Migrol Service',
+          'fuel:diesel': 'yes',
+          'fuel:octane_95': 'yes',
+          'opening_hours': '24/7',
+        },
+      })!;
+
+      final merged = tomtom.enrichedWith(osm);
+      expect(merged.brand, 'Migrol'); // kept from TomTom
+      expect(merged.name, 'Migrol Service'); // filled from OSM
+      expect(merged.openingHours, '24/7');
+      expect(merged.fuels, {FuelType.diesel, FuelType.petrol95});
+    });
+  });
+
   group('distanceKmTo', () {
     test('computes a plausible distance', () {
       final station = Station(

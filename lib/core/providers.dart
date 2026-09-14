@@ -8,6 +8,7 @@ import '../features/search/search_repository.dart';
 import '../features/stations/models/fuel_type.dart';
 import '../features/stations/models/station.dart';
 import '../features/stations/stations_repository.dart';
+import 'config.dart';
 import 'location/location_service.dart';
 
 /// Overridden in `main()` once SharedPreferences has been initialised.
@@ -19,7 +20,11 @@ final locationServiceProvider =
     Provider<LocationService>((ref) => LocationService());
 
 final stationsRepositoryProvider = Provider<StationsRepository>((ref) {
-  final repo = StationsRepository();
+  // With a TomTom key, use TomTom for coverage enriched with OSM fuel tags;
+  // otherwise fall back to the free OpenStreetMap Overpass source.
+  final StationsRepository repo = AppConfig.hasTomTom
+      ? HybridStationsRepository(apiKey: AppConfig.tomTomApiKey)
+      : OsmStationsRepository();
   ref.onDispose(repo.dispose);
   return repo;
 });
@@ -71,7 +76,7 @@ final userLatLngProvider = Provider<LatLng>((ref) {
 /// The current visible map bounds, pushed by the map screen on idle.
 final mapBoundsProvider = StateProvider<LatLngBounds?>((ref) => null);
 
-/// Stations for the current [mapBoundsProvider], fetched from OSM.
+/// Stations for the current [mapBoundsProvider].
 final stationsProvider = FutureProvider<List<Station>>((ref) async {
   final bounds = ref.watch(mapBoundsProvider);
   if (bounds == null) return const [];

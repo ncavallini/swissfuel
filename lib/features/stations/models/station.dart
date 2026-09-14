@@ -34,6 +34,93 @@ class Station {
   /// Best available human label for the station.
   String get displayName => name ?? brand ?? operator ?? '';
 
+  Station copyWith({
+    String? name,
+    String? brand,
+    String? operator,
+    String? openingHours,
+    String? address,
+    Set<FuelType>? fuels,
+    Map<String, String>? tags,
+  }) {
+    return Station(
+      id: id,
+      position: position,
+      name: name ?? this.name,
+      brand: brand ?? this.brand,
+      operator: operator ?? this.operator,
+      openingHours: openingHours ?? this.openingHours,
+      address: address ?? this.address,
+      fuels: fuels ?? this.fuels,
+      tags: tags ?? this.tags,
+    );
+  }
+
+  /// Returns a copy enriched with details from a nearby OpenStreetMap [osm]
+  /// station: fuel types (OSM has per-fuel tags that TomTom Search omits) plus
+  /// any name/brand/opening-hours/address fields missing from this station.
+  Station enrichedWith(Station osm) {
+    return copyWith(
+      name: name ?? osm.name,
+      brand: brand ?? osm.brand,
+      operator: operator ?? osm.operator,
+      openingHours: openingHours ?? osm.openingHours,
+      address: address ?? osm.address,
+      fuels: {...fuels, ...osm.fuels},
+    );
+  }
+
+  /// Builds a [Station] from a TomTom Search API result element.
+  ///
+  /// TomTom is the authoritative source for station locations and brands; it
+  /// does not expose per-fuel availability, so [fuels] is left empty here and
+  /// enriched from OpenStreetMap where a nearby match exists.
+  static Station? fromTomTom(Map<String, dynamic> element) {
+    final id = element['id'];
+    final position = element['position'];
+    if (id == null || position is! Map) return null;
+    final lat = (position['lat'] as num?)?.toDouble();
+    final lon = (position['lon'] as num?)?.toDouble();
+    if (lat == null || lon == null) return null;
+
+    final poi = (element['poi'] as Map?) ?? const {};
+    final brands = (poi['brands'] as List?) ?? const [];
+    final brand = brands.isNotEmpty && brands.first is Map
+        ? (brands.first as Map)['name']?.toString()
+        : null;
+
+    return Station(
+      id: 'tomtom/$id',
+      position: LatLng(lat, lon),
+      name: poi['name']?.toString(),
+      brand: brand,
+      openingHours: _tomTomOpeningHours(poi['openingHours']),
+      address: _tomTomAddress(element['address']),
+    );
+  }
+
+  static String? _tomTomOpeningHours(Object? openingHours) {
+    if (openingHours is Map) {
+      final text = openingHours['text'];
+      if (text != null) return text.toString();
+    }
+    return null;
+  }
+
+  static String? _tomTomAddress(Object? address) {
+    if (address is! Map) return null;
+    final freeform = address['freeformAddress'];
+    if (freeform != null) return freeform.toString();
+    final street = address['streetName']?.toString();
+    final number = address['streetNumber']?.toString();
+    final postcode = address['postalCode']?.toString();
+    final city = address['municipality']?.toString();
+    final line1 = [street, number].where((e) => e != null).join(' ').trim();
+    final line2 = [postcode, city].where((e) => e != null).join(' ').trim();
+    final parts = [line1, line2].where((e) => e.isNotEmpty).toList();
+    return parts.isEmpty ? null : parts.join(', ');
+  }
+
   /// Builds a [Station] from an Overpass API element.
   ///
   /// Handles both `node` elements (with `lat`/`lon`) and `way`/`relation`

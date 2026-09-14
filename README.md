@@ -31,8 +31,10 @@ flutter analyze
 Feature-first layout under `lib/`:
 
 - `core/` — theme, location service, and all Riverpod providers (`providers.dart`).
-- `features/stations/` — `Station` model + `StationsRepository` (Overpass API
-  with an in-memory TTL/bounds cache).
+- `features/stations/` — `Station` model + `StationsRepository` sources with a
+  shared in-memory TTL/bounds cache: `OsmStationsRepository` (Overpass, free),
+  `TomTomStationsRepository` (TomTom Category Search, key required), and
+  `HybridStationsRepository` (TomTom coverage enriched with OSM fuel tags).
 - `features/map/` — `flutter_map` view, markers, search bar, recenter.
 - `features/nearby/` — filtered, distance-sorted station list.
 - `features/search/` — Nominatim geocoding + filter/sort bottom sheet.
@@ -42,8 +44,22 @@ Feature-first layout under `lib/`:
 - `l10n/` — generated `AppLocalizations` from `app_*.arb`.
 
 Data flow: the map pushes its visible bounds (debounced) into `mapBoundsProvider`
-→ `stationsProvider` fetches from Overpass → `filteredStationsProvider` applies
-filters/query/sort and drives both the markers and the list.
+→ `stationsProvider` fetches from the active source → `filteredStationsProvider`
+applies filters/query/sort and drives both the markers and the list.
+
+### Station data source
+
+By default the app uses the free OpenStreetMap Overpass source. Supply a
+[TomTom Search API](https://developer.tomtom.com/) key to switch to the more
+complete TomTom coverage (auto-enriched with OSM fuel tags):
+
+```
+flutter run --dart-define=TOMTOM_API_KEY=your_key_here
+```
+
+The key is read in `lib/core/config.dart` and must be kept out of git. TomTom's
+**Fuel Prices** API (per-station prices) is a separate, paid enterprise product
+and is **not** used; community-submitted prices remain the plan for Phase 2.
 
 ## Known limitations / next steps
 
