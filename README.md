@@ -34,7 +34,10 @@ Feature-first layout under `lib/`:
 - `features/stations/` — `Station` model + `StationsRepository` sources with a
   shared in-memory TTL/bounds cache: `OsmStationsRepository` (Overpass, free),
   `TomTomStationsRepository` (TomTom Category Search, key required), and
-  `HybridStationsRepository` (TomTom coverage enriched with OSM fuel tags).
+  `HybridStationsRepository` — OSM as the exhaustive base (Overpass enumerates
+  every station in the viewport with no cap), enriched with brand/name from a
+  nearby TomTom match. (TomTom Search is relevance-ranked and capped at 100
+  results, so it enriches rather than drives the map.)
 - `features/map/` — `flutter_map` view, markers, search bar, recenter.
 - `features/nearby/` — filtered, distance-sorted station list.
 - `features/search/` — Nominatim geocoding + filter/sort bottom sheet.
@@ -49,9 +52,10 @@ applies filters/query/sort and drives both the markers and the list.
 
 ### Station data source
 
-By default the app uses the free OpenStreetMap Overpass source. Supply a
-[TomTom Search API](https://developer.tomtom.com/) key to switch to the more
-complete TomTom coverage (auto-enriched with OSM fuel tags):
+Station coverage always comes from the free OpenStreetMap Overpass source
+(exhaustive per viewport). Supplying a [TomTom Search API](https://developer.tomtom.com/)
+key additionally enriches those stations with cleaner brand/name data from a
+nearby TomTom match:
 
 ```
 flutter run --dart-define=TOMTOM_API_KEY=your_key_here

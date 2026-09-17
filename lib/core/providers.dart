@@ -179,7 +179,11 @@ final filteredStationsProvider = Provider<List<Station>>((ref) {
   Iterable<Station> result = stations;
 
   if (filters.fuels.isNotEmpty) {
-    result = result.where((s) => filters.fuels.every(s.fuels.contains));
+    // Many stations have no fuel tags at all; treat unknown as a possible match
+    // rather than hiding them, so filtering narrows the map instead of emptying
+    // it. Stations with known fuels must contain all selected ones.
+    result = result.where(
+        (s) => s.fuels.isEmpty || filters.fuels.every(s.fuels.contains));
   }
   if (filters.brand != null) {
     result = result.where((s) => s.brand == filters.brand);

@@ -174,10 +174,13 @@ class TomTomStationsRepository extends StationsRepository {
   void dispose() => _client.close();
 }
 
-/// Uses TomTom for authoritative station coverage and enriches each result with
-/// OpenStreetMap fuel-type tags (and any missing fields) from a nearby OSM
-/// match. Stations OSM knows about but TomTom misses are appended, so the union
-/// is at least as complete as either source alone.
+/// Uses OpenStreetMap (Overpass) as the exhaustive base — it enumerates *every*
+/// station in the viewport with no result cap — and enriches each with a nearby
+/// TomTom match for cleaner brand/name data. TomTom's Search API is
+/// relevance-ranked and capped at 100 results, so it is unsuitable as the base
+/// for a pannable map but fine as an enrichment layer. TomTom-only stations
+/// (missing from OSM) are appended so the union stays at least as complete as
+/// either source alone.
 class HybridStationsRepository extends StationsRepository {
   HybridStationsRepository({required String apiKey, http.Client? client})
       : _tomtom = TomTomStationsRepository(apiKey: apiKey, client: client),
@@ -190,11 +193,11 @@ class HybridStationsRepository extends StationsRepository {
   static const double _matchMeters = 80;
   static const Distance _distance = Distance();
 
-  /// TomTom is the primary source, so it gets the longer budget. OSM only
-  /// supplies fuel-tag enrichment, so it is kept short — a slow/unreachable
-  /// Overpass must never stall the map or drop the TomTom results.
-  static const Duration _tomtomTimeout = Duration(seconds: 12);
-  static const Duration _osmTimeout = Duration(seconds: 6);
+  /// OSM is the primary/exhaustive source, so it gets the longer budget. TomTom
+  /// only supplies brand/name enrichment, so it is kept short — a slow TomTom
+  /// must never stall the map or drop the OSM results.
+  static const Duration _osmTimeout = Duration(seconds: 12);
+  static const Duration _tomtomTimeout = Duration(seconds: 6);
 
   @override
   Future<List<Station>> queryRegion(LatLngBounds b) async {
@@ -202,23 +205,25 @@ class HybridStationsRepository extends StationsRepository {
     // source must not discard the other. `null` means that source errored or
     // timed out (distinct from a successful empty result).
     final results = await Future.wait([
-      _tryQuery(_tomtom.queryRegion(b), _tomtomTimeout),
       _tryQuery(_osm.queryRegion(b), _osmTimeout),
+      _tryQuery(_tomtom.queryRegion(b), _tomtomTimeout),
     ]);
-    final tomtom = results[0];
-    final osm = results[1];
+    final osm = results[0];
+    final tomtom = results[1];
 
     // Only surface an error when both sources fail, so the UI can offer a retry
     // instead of a misleading "no stations here".
-    if (tomtom == null && osm == null) {
+    if (osm == null && tomtom == null) {
       throw StationsException('All station sources failed');
     }
 
-    final tomtomStations = tomtom ?? const <Station>[];
     final osmStations = osm ?? const <Station>[];
+    final tomtomStations = tomtom ?? const <Station>[];
 
-    if (tomtomStations.isEmpty) return osmStations;
-    return _merge(tomtomStations, osmStations);
+    // OSM unavailable: fall back to whatever TomTom returned (capped, but better
+    // than an empty map).
+    if (osmStations.isEmpty) return tomtomStations;
+    return _merge(osmStations, tomtomStations);
   }
 
   static Future<List<Station>?> _tryQuery(
@@ -230,33 +235,36 @@ class HybridStationsRepository extends StationsRepository {
     }
   }
 
-  List<Station> _merge(List<Station> tomtom, List<Station> osm) {
+  /// OSM is the base; each station is enriched (missing brand/name/etc. filled)
+  /// from its nearest TomTom match. TomTom stations with no OSM counterpart are
+  /// appended.
+  List<Station> _merge(List<Station> osm, List<Station> tomtom) {
     final merged = <Station>[];
-    final usedOsm = <int>{};
+    final usedTomtom = <int>{};
 
-    for (final station in tomtom) {
+    for (final station in osm) {
       int? nearestIdx;
       double nearest = _matchMeters;
-      for (var i = 0; i < osm.length; i++) {
-        if (usedOsm.contains(i)) continue;
+      for (var i = 0; i < tomtom.length; i++) {
+        if (usedTomtom.contains(i)) continue;
         final d = _distance.as(
-            LengthUnit.Meter, station.position, osm[i].position);
+            LengthUnit.Meter, station.position, tomtom[i].position);
         if (d <= nearest) {
           nearest = d;
           nearestIdx = i;
         }
       }
       if (nearestIdx != null) {
-        usedOsm.add(nearestIdx);
-        merged.add(station.enrichedWith(osm[nearestIdx]));
+        usedTomtom.add(nearestIdx);
+        merged.add(station.enrichedWith(tomtom[nearestIdx]));
       } else {
         merged.add(station);
       }
     }
 
-    // OSM-only stations TomTom didn't return.
-    for (var i = 0; i < osm.length; i++) {
-      if (!usedOsm.contains(i)) merged.add(osm[i]);
+    // TomTom-only stations OSM didn't return.
+    for (var i = 0; i < tomtom.length; i++) {
+      if (!usedTomtom.contains(i)) merged.add(tomtom[i]);
     }
 
     return merged;

@@ -56,17 +56,18 @@ class Station {
     );
   }
 
-  /// Returns a copy enriched with details from a nearby OpenStreetMap [osm]
-  /// station: fuel types (OSM has per-fuel tags that TomTom Search omits) plus
-  /// any name/brand/opening-hours/address fields missing from this station.
-  Station enrichedWith(Station osm) {
+  /// Returns a copy enriched from a nearby [other] station: this station's own
+  /// values win, and any missing name/brand/operator/opening-hours/address
+  /// fields are filled from [other]; fuel sets are unioned. Used to combine an
+  /// OSM station (per-fuel tags) with its TomTom match (cleaner brand/name).
+  Station enrichedWith(Station other) {
     return copyWith(
-      name: name ?? osm.name,
-      brand: brand ?? osm.brand,
-      operator: operator ?? osm.operator,
-      openingHours: openingHours ?? osm.openingHours,
-      address: address ?? osm.address,
-      fuels: {...fuels, ...osm.fuels},
+      name: name ?? other.name,
+      brand: brand ?? other.brand,
+      operator: operator ?? other.operator,
+      openingHours: openingHours ?? other.openingHours,
+      address: address ?? other.address,
+      fuels: {...fuels, ...other.fuels},
     );
   }
 
