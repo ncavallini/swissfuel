@@ -100,6 +100,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get noStations => 'Nessuna stazione trovata in questa zona';
 
   @override
+  String get stationsLoadError =>
+      'Impossibile caricare le stazioni. Controlla la connessione.';
+
+  @override
   String get loadingStations => 'Caricamento stazioni…';
 
   @override

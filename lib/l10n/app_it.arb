@@ -29,6 +29,7 @@
   "removeFavorite": "Rimuovi dai preferiti",
   "noFavorites": "Nessuna stazione preferita",
   "noStations": "Nessuna stazione trovata in questa zona",
+  "stationsLoadError": "Impossibile caricare le stazioni. Controlla la connessione.",
   "loadingStations": "Caricamento stazioni…",
   "openingHours": "Orari di apertura",
   "pricesComingSoon": "Prezzi della community in arrivo",

@@ -100,6 +100,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noStations => 'Keine Tankstellen in diesem Gebiet gefunden';
 
   @override
+  String get stationsLoadError =>
+      'Tankstellen konnten nicht geladen werden. Verbindung prüfen.';
+
+  @override
   String get loadingStations => 'Tankstellen werden geladen…';
 
   @override

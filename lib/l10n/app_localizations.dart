@@ -276,6 +276,12 @@ abstract class AppLocalizations {
   /// **'No stations found in this area'**
   String get noStations;
 
+  /// No description provided for @stationsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load stations. Check your connection.'**
+  String get stationsLoadError;
+
   /// No description provided for @loadingStations.
   ///
   /// In en, this message translates to:
