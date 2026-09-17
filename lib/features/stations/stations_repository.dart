@@ -86,15 +86,17 @@ class OsmStationsRepository extends StationsRepository {
         'relation["amenity"="fuel"]($s,$w,$n,$e););'
         'out center;';
 
-    final response = await _client.post(
-      _endpoint,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        // Overpass rejects requests without an identifying User-Agent (HTTP 406).
-        'User-Agent': 'SwissFuel/1.0 (community fuel price app)',
-      },
-      body: {'data': query},
-    );
+    final response = await _client
+        .post(
+          _endpoint,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            // Overpass rejects requests without an identifying User-Agent (406).
+            'User-Agent': 'SwissFuel/1.0 (community fuel price app)',
+          },
+          body: {'data': query},
+        )
+        .timeout(const Duration(seconds: 25));
 
     if (response.statusCode != 200) {
       throw StationsException('Overpass error ${response.statusCode}');
@@ -150,7 +152,7 @@ class TomTomStationsRepository extends StationsRepository {
 
     final response = await _client.get(uri, headers: {
       'User-Agent': 'SwissFuel/1.0 (community fuel price app)',
-    });
+    }).timeout(const Duration(seconds: 15));
 
     if (response.statusCode != 200) {
       throw StationsException('TomTom error ${response.statusCode}');
@@ -188,18 +190,47 @@ class HybridStationsRepository extends StationsRepository {
   static const double _matchMeters = 80;
   static const Distance _distance = Distance();
 
+  /// TomTom is the primary source, so it gets the longer budget. OSM only
+  /// supplies fuel-tag enrichment, so it is kept short — a slow/unreachable
+  /// Overpass must never stall the map or drop the TomTom results.
+  static const Duration _tomtomTimeout = Duration(seconds: 12);
+  static const Duration _osmTimeout = Duration(seconds: 6);
+
   @override
   Future<List<Station>> queryRegion(LatLngBounds b) async {
-    // Query both concurrently; if TomTom fails, fall back to OSM alone.
+    // Query both concurrently. Each is guarded independently: a failure of one
+    // source must not discard the other. `null` means that source errored or
+    // timed out (distinct from a successful empty result).
     final results = await Future.wait([
-      _tomtom.queryRegion(b).catchError((_) => <Station>[]),
-      _osm.queryRegion(b),
+      _tryQuery(_tomtom.queryRegion(b), _tomtomTimeout),
+      _tryQuery(_osm.queryRegion(b), _osmTimeout),
     ]);
     final tomtom = results[0];
     final osm = results[1];
 
-    if (tomtom.isEmpty) return osm;
+    // Only surface an error when both sources fail, so the UI can offer a retry
+    // instead of a misleading "no stations here".
+    if (tomtom == null && osm == null) {
+      throw StationsException('All station sources failed');
+    }
 
+    final tomtomStations = tomtom ?? const <Station>[];
+    final osmStations = osm ?? const <Station>[];
+
+    if (tomtomStations.isEmpty) return osmStations;
+    return _merge(tomtomStations, osmStations);
+  }
+
+  static Future<List<Station>?> _tryQuery(
+      Future<List<Station>> query, Duration timeout) async {
+    try {
+      return await query.timeout(timeout);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Station> _merge(List<Station> tomtom, List<Station> osm) {
     final merged = <Station>[];
     final usedOsm = <int>{};
 
