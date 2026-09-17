@@ -29,6 +29,7 @@
   "removeFavorite": "Aus Favoriten entfernen",
   "noFavorites": "Noch keine Favoriten",
   "noStations": "Keine Tankstellen in diesem Gebiet gefunden",
+  "stationsLoadError": "Tankstellen konnten nicht geladen werden. Verbindung prüfen.",
   "loadingStations": "Tankstellen werden geladen…",
   "openingHours": "Öffnungszeiten",
   "pricesComingSoon": "Community-Preise folgen bald",

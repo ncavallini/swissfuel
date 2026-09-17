@@ -63,6 +63,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final l10n = AppLocalizations.of(context);
     final userLatLng = ref.watch(userLatLngProvider);
     final stations = ref.watch(filteredStationsProvider);
+    final hasError = ref.watch(stationsProvider).hasError;
 
     // Center on the user the first time their location resolves.
     ref.listen(userLocationProvider, (_, next) {
@@ -124,6 +125,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           onFilters: () => showFiltersSheet(context),
           filtersActive: ref.watch(filtersProvider).isActive,
         ),
+        if (hasError)
+          _ErrorBanner(
+            message: l10n.stationsLoadError,
+            retryLabel: l10n.retry,
+            onRetry: () => ref.invalidate(stationsProvider),
+          ),
         Positioned(
           right: 16,
           bottom: 16,
@@ -178,6 +185,58 @@ class _SearchBar extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  final String message;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      // Sit above the recenter FAB, clear of the search bar at the top.
+      child: Align(
+        alignment: Alignment.bottomLeft,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 88, 16),
+          child: Material(
+            color: scheme.errorContainer,
+            elevation: 3,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.cloud_off, size: 20, color: scheme.onErrorContainer),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      message,
+                      style: TextStyle(color: scheme.onErrorContainer),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  TextButton(
+                    onPressed: onRetry,
+                    child: Text(retryLabel),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

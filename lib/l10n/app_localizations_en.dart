@@ -100,6 +100,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noStations => 'No stations found in this area';
 
   @override
+  String get stationsLoadError =>
+      'Couldn\'t load stations. Check your connection.';
+
+  @override
   String get loadingStations => 'Loading stations…';
 
   @override
